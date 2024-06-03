@@ -120,6 +120,89 @@ puntaje_tablero_aux([s(Cat,P)|T], PuntajeNums, PuntajeJuegos):-
     member(Cat, [three_of_a_kind,four_of_a_kind,full_house,small_straight,large_straight,yahtzee,chance]),
     puntaje_tablero_aux(T, PuntajeNums, PuntajeJuegos1),
     PuntajeJuegos is PuntajeJuegos1 + P.
+
+% es_juego(+Dados, +Tablero, -Juego)
+es_juego(Dados, Tablero, Juego) :-
+    findall(Cat, juego_categoria(Dados, Tablero, Cat), Juego).
+
+juego_categoria(Dados, Tablero, three_of_a_kind) :-
+    member(s(three_of_a_kind, nil), Tablero),
+    three_of_a_kind(Dados, true, _).
+juego_categoria(Dados, Tablero, four_of_a_kind) :-
+    member(s(four_of_a_kind, nil), Tablero),
+    four_of_a_kind(Dados, true).
+juego_categoria(Dados, Tablero, full_house) :-
+    member(s(full_house, nil), Tablero),
+    is_full_house(Dados, true).
+juego_categoria(Dados, Tablero, small_straight) :-
+    member(s(small_straight, nil), Tablero),
+    small_straight(Dados, true).
+juego_categoria(Dados, Tablero, large_straight) :-
+    member(s(large_straight, nil), Tablero),
+    large_straight(Dados, true).
+juego_categoria(Dados, Tablero, yahtzee) :-
+    member(s(yahtzee, nil), Tablero),
+    yahtzee(Dados, Dados, 5).
+
+
+% Crear patron en base a los dados repetidos
+patron_repetidos([], _, []).
+patron_repetidos([H|T], Repetidos, [P|Patron]) :-
+    ( member(H, Repetidos) -> P = 0 ; P = 1 ),
+    patron_repetidos(T, Repetidos, Patron).
+
+% elige la mejor categoría para anotar los puntos
+% elegir_mejor_juego(-Cat, +Juegos)
+elegir_mejor_juego(Cat, Juegos) :-
+    ListaJuegos = [yahtzee, large_straight, small_straight, full_house, four_of_a_kind, three_of_a_kind, chance],
+    member(Cat, ListaJuegos),
+    member(Cat, Juegos), !.
+
+% Dada una lista con valores de dados no repetidos, 
+% asigna a Categorias las categorias de esos dados.
+% listar_categorias_de_repetidos(+Lista, -Categorias)
+listar_categorias_de_repetidos(Lista, Categorias) :-
+    listar_categorias_de_repetidos_acum(Lista, [], Categorias).
+
+listar_categorias_de_repetidos_acum([], Acumulador, Acumulador).
+listar_categorias_de_repetidos_acum([1|T], Acumulador, Categorias) :-
+    listar_categorias_de_repetidos_acum(T, [ones|Acumulador], Categorias).
+listar_categorias_de_repetidos_acum([2|T], Acumulador, Categorias) :-
+    listar_categorias_de_repetidos_acum(T, [twos|Acumulador], Categorias).
+listar_categorias_de_repetidos_acum([3|T], Acumulador, Categorias) :-
+    listar_categorias_de_repetidos_acum(T, [threes|Acumulador], Categorias).
+listar_categorias_de_repetidos_acum([4|T], Acumulador, Categorias) :-
+    listar_categorias_de_repetidos_acum(T, [fours|Acumulador], Categorias).
+listar_categorias_de_repetidos_acum([5|T], Acumulador, Categorias) :-
+    listar_categorias_de_repetidos_acum(T, [fives|Acumulador], Categorias).
+listar_categorias_de_repetidos_acum([6|T], Acumulador, Categorias) :-
+    listar_categorias_de_repetidos_acum(T, [sixes|Acumulador], Categorias).
+
+% Elige la categoria para los dados repetidos en el tablero
+elegir_categoria_repetida(Tablero, Categoria, Repetidos) :-
+    listar_categorias_de_repetidos(Repetidos, CategoriasRepetidas),
+    findall(Cat, (member(s(Cat, nil), Tablero), 
+        member(Cat, [aces, twos, threes, fours, fives, sixes]),
+        member(Cat, CategoriasRepetidas)),
+        CategoriasPosibles),
+        write('Categorias Posibles: '), writeln(CategoriasPosibles),
+        ( CategoriasPosibles \= [] -> member(Categoria, CategoriasPosibles) 
+        ; (member(s(chance, nil), Tablero) -> Categoria = chance ) 
+        ; false), !.
+
+elegir_categoria_menor_valor(Dados, Tablero, Categoria) :-
+    listar_categorias_de_repetidos(Dados, CategoriasRepetidas),
+    findall(Cat, 
+        (member(s(Cat, P), Tablero), 
+         member(Cat, [aces, twos, threes, fours, fives, sixes]), 
+         member(Cat, CategoriasRepetidas),
+         P = nil), 
+        PuntajesCategorias),  
+    PuntajesCategorias \= [],
+    member(Categoria, PuntajesCategorias), !.
+
+
+
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % puntaje(+Dados, +Cat, -Puntos)
@@ -223,13 +306,25 @@ cambio_dados(Dados, _, humano, Patron) :-
 %                  IA_DET 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cambio_dados(Dados, _, ia_det, Patron).
+cambio_dados(Dados, Tablero, ia_det, Patron) :-
+    es_juego(Dados,Tablero, Juegos),
+    Juegos \= [],
+    Patron = [0,0,0,0,0], !.
+cambio_dados(Dados, _, ia_det, Patron) :-
+    sort(Dados, DadosOrdenados),
+    length(DadosOrdenados, Len),
+    Len == 5,
+    Patron = [1,1,1,1,1], !.
+cambio_dados(Dados, Tablero, ia_det, Patron) :-
+    % Buscamos los dados repetidos
+    findall(X, (nth0(Index, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
+    patron_repetidos(Dados, Repetidos, Patron), !.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                  IA_PROB 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cambio_dados(Dados, _, ia_prob, Patron).
+cambio_dados(Dados, Tablero, ia_prob, Patron).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -253,7 +348,27 @@ eleccion_slot(Dados, Tablero, humano, Categoria) :-
 %                  IA_DET 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-eleccion_slot(Dados, Tablero, ia_det, Categoria).
+eleccion_slot(Dados, Tablero, ia_det, Categoria) :-
+    % Primer caso de elección: si hay un juego posible, elegir el mejor
+    es_juego(Dados, Tablero, Juegos),
+    Juegos \= [],
+    elegir_mejor_juego(Categoria, Juegos), !.
+eleccion_slot(Dados, Tablero, ia_det, Categoria) :-
+    % Segundo caso de elección: si hay dados repetidos, elegir la categoría de los dados repetidos 
+    findall(X, (member(X, Dados), contar(Dados, X, Count), Count > 1), RepetidosDuplicados),
+    sort(RepetidosDuplicados, Repetidos),
+    Repetidos \= [],
+    elegir_categoria_repetida(Tablero, Categoria, Repetidos), !.
+eleccion_slot(Dados, Tablero, ia_det, Categoria) :-
+    % Tercer caso de elección: si no hay dados repetidos, elegir la categoría con menor valor
+    ( member(s(chance, nil), Tablero) -> Categoria = chance
+    ; elegir_categoria_menor_valor(Dados,Tablero, Categoria) ), !.
+eleccion_slot(_, Tablero, ia_det, Categoria) :-
+    % Cuarto caso de elección: si no se cumple ninguno de los casos anteriores, 
+    % elegir la categoria de menor valor
+    member(s(Categoria, nil), Tablero),
+    member(Categorias, [aces,twos,threes,fours,fives,sixes,three_of_a_kind,four_of_a_kind,full_house,small_straight,large_straight,yahtzee,chance]), !.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                  IA_PROB 
