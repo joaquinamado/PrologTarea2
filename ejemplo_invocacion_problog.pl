@@ -6,7 +6,10 @@
 
 consultar_probabilidades(ListaValores):-
     % Problog debe estar en el path!
-    absolute_file_name(path(problog),Problog,[access(exist),extensions([exe])]),
+    % LINUX
+    absolute_file_name(path(problog), Problog, [access(execute)]),
+    % WINDOWS 
+    %absolute_file_name(path(problog),Problog,[access(exist),extensions([exe])]),
     % Nombre del modelo, que se supone está en el mismo directorio que el fuente
     absolute_file_name(modelo_problog,Modelo,[file_type(prolog)]),
     % Invoca a problog con el modelo como argumento, y envía la salida a un pipe
