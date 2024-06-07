@@ -1,6 +1,36 @@
 :- use_module(library(filesex)).
 :- use_module(library(random)).
 
+consultar_probabilidades(ListaValores):-
+    % Problog debe estar en el path!
+    % LINUX
+    absolute_file_name(path(problog), Problog, [access(execute)]),
+    % WINDOWS 
+    %absolute_file_name(path(problog),Problog,[access(exist),extensions([exe])]),
+    % Nombre del modelo, que se supone está en el mismo directorio que el fuente
+    absolute_file_name(modelo_problog_yahtzee,Modelo,[file_type(prolog)]),
+    % Invoca a problog con el modelo como argumento, y envía la salida a un pipe
+    process_create(Problog,[Modelo],[stdout(pipe(In))]),
+    % Convierte la salida a un string
+    read_string(In,_,Result),
+    % Divide la salida
+    split_string(Result,"\n\t","\r ",L),
+    % Escribo la salida
+    writeln(Result),
+    % Quito último elemento de la lista
+    append(L1,[_],L),
+    lista_valores(L1,ListaValores).
+
+lista_valores([X,Y|T],[TermValor|T1]):-
+    % Saco los dos puntos del final
+    split_string(X,"",":",[X1|_]),
+    term_string(TermX,X1),
+    TermX =.. [carta,Cat,Valor],
+    number_string(NumberY,Y),
+    TermValor =.. [p,Cat,Valor,NumberY],
+    lista_valores(T,T1).
+lista_valores([],[]).
+
 % Setea el estado inicial del generador de números aleatorios
 iniciar(X):- set_random(seed(X)).
 
@@ -317,6 +347,7 @@ cambio_dados(Dados, _, ia_det, Patron) :-
     Patron = [1,1,1,1,1], !.
 cambio_dados(Dados, Tablero, ia_det, Patron) :-
     % Buscamos los dados repetidos
+    % @TODO ver si Tablero tiene en nil la categoría de los dados repetidos y los juegos con dados repetidos
     findall(X, (nth0(Index, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
     patron_repetidos(Dados, Repetidos, Patron), !.
 
@@ -325,6 +356,14 @@ cambio_dados(Dados, Tablero, ia_det, Patron) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 cambio_dados(Dados, Tablero, ia_prob, Patron).
+    % Itero sobre todos los patron posibles
+    % Calculo las porbabilidades de cada juego
+    % Si s(Cat,nil) calculo la probabilidad, sino 0
+    % Elijo el juego con mayor esperanza de puntaje 
+    % Esperanza = Puntaje * Probabilidad
+    % [5,5,5,5,1] -> [0,0,0,0,1] three_of_a_kind * 1 +  four_of_a_kind * 5/6 + yahtzee * 1/6
+    
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

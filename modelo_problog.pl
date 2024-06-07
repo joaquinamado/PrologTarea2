@@ -6,3 +6,5 @@
 1/12::carta(P,X) :- palo(P), between(1,12,X).
 
 query(carta(bastos,X)).
+
+
