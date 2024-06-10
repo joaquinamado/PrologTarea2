@@ -29,7 +29,7 @@ consultar_probabilidades(Probabilidad, Dados, Query):-
     % Crear archivo con los valores de los dados
     % Agrega query y dados al modelo
     term_string(Dados, DadosString),
-    format(string(QueryString), 'query(~w(~w, Puntaje, Prob)).', [Query, DadosString]),
+    format(string(QueryString), 'query(~w(~w, Prob)).', [Query, DadosString]),
     atomic_list_concat([ModeloContenido, '\n', QueryString], ContenidoCompleto),
     escribir_archivo('nuevo_modelo.pl', ContenidoCompleto),    
     % Invoca a problog con el modelo como argumento, y envía la salida a un pipe
@@ -43,7 +43,6 @@ consultar_probabilidades(Probabilidad, Dados, Query):-
     writeln(Result),
     % Quito último elemento de la lista
     append(L1,[_],L),
-    writeln(L1),
     lista_valores(L1,Probabilidad).
 
 

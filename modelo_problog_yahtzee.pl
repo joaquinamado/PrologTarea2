@@ -7,17 +7,42 @@
 1/6::dado5(1);1/6::dado5(2);1/6::dado5(3);1/6::dado5(4);1/6::dado5(5);1/6::dado5(6).
 
 
-% yahtzee_prob(+Dados,+Patron, -Probabilidad)
-yahtzee_prob(Puntaje) :-
+yahtzee_prob :-
     dado1(Dado),
     dado2(Dado),
     dado3(Dado),
     dado4(Dado),
-    dado5(Dado),
-    Puntaje is 50.
+    dado5(Dado).
 
-yahtzee_prob_dados(Dados, Puntaje, Prob) :- 
-    subquery(yahtzee_prob(Puntaje), Prob, Dados).
-yahtzee_prob_dados(_, Puntaje, Prob).
+yahtzee_prob_dados(Dados, Prob) :- 
+    subquery(yahtzee_prob, Prob, Dados).
+yahtzee_prob_dados(_, Prob).
 
-%query(yahtzee_prob_dados(Dados, Puntaje, Prob)).
+four_of_a_kind_prob :-
+    (dado1(Dado), dado2(Dado), dado3(Dado), dado4(Dado));
+    (dado1(Dado), dado2(Dado), dado3(Dado), dado5(Dado));
+    (dado1(Dado), dado2(Dado), dado4(Dado), dado5(Dado));
+    (dado1(Dado), dado3(Dado), dado4(Dado), dado5(Dado));
+    (dado2(Dado), dado3(Dado), dado4(Dado), dado5(Dado)).
+
+four_of_a_kind_prob_dados(Dados, Prob) :-
+    subquery(four_of_a_kind_prob, Prob, Dados).
+four_of_a_kind_prob_dados(_, Prob).
+
+three_of_a_kind_prob :-
+    (dado1(Dado), dado2(Dado), dado3(Dado));
+    (dado1(Dado), dado2(Dado), dado4(Dado));
+    (dado1(Dado), dado2(Dado), dado5(Dado));
+    (dado1(Dado), dado3(Dado), dado4(Dado));
+    (dado1(Dado), dado3(Dado), dado5(Dado));
+    (dado1(Dado), dado4(Dado), dado5(Dado));
+    (dado2(Dado), dado3(Dado), dado4(Dado));
+    (dado2(Dado), dado3(Dado), dado5(Dado));
+    (dado2(Dado), dado4(Dado), dado5(Dado));
+    (dado3(Dado), dado4(Dado), dado5(Dado)).
+
+three_of_a_kind_prob_dados(Dados, Prob) :-
+    subquery(three_of_a_kind_prob, Prob, Dados).
+three_of_a_kind_prob_dados(_, Prob).
+
+
