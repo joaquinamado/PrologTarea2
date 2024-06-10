@@ -7,12 +7,6 @@ escribir_archivo(Nombre, Contenido) :-
     write(Stream, Contenido),
     close(Stream).
 
-%read_file_to_string(File, String, Options) :-
-    %    setup_call_cleanup(
-    %    open(File, read, Stream, Options),
-    %    read_string(Stream, _, String),
-    %    close(Stream)
-    %).
 
 consultar_probabilidades(Probabilidad, Dados, Query):-
     % Problog debe estar en el path!
@@ -26,11 +20,12 @@ consultar_probabilidades(Probabilidad, Dados, Query):-
     % Leer el contenido del modelo_problog
     read_file_to_string(Modelo, ModeloContenido, []),
 
-    % Crear archivo con los valores de los dados
     % Agrega query y dados al modelo
     term_string(Dados, DadosString),
     format(string(QueryString), 'query(~w(~w, Prob)).', [Query, DadosString]),
     atomic_list_concat([ModeloContenido, '\n', QueryString], ContenidoCompleto),
+
+    % Crear archivo con los valores de los dados
     escribir_archivo('nuevo_modelo.pl', ContenidoCompleto),    
     % Invoca a problog con el modelo como argumento, y envía la salida a un pipe
     absolute_file_name(nuevo_modelo,ModeloEvidencias,[file_type(prolog)]),
@@ -47,7 +42,7 @@ consultar_probabilidades(Probabilidad, Dados, Query):-
 
 
 % Predicado auxiliar para transformar a términos y a números, como se espera
-lista_valores([X | T], Probabilidad) :-
+lista_valores([X | _], Probabilidad) :-
     % Separamos la cadena usando ':'
     split_string(X, ":", "", [Cadena | _]),
     % Separamos por comas para obtener los componentes

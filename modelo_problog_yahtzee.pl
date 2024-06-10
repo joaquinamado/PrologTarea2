@@ -45,4 +45,47 @@ three_of_a_kind_prob_dados(Dados, Prob) :-
     subquery(three_of_a_kind_prob, Prob, Dados).
 three_of_a_kind_prob_dados(_, Prob).
 
+full_house_prob :- 
+    (dado1(Dado1), dado2(Dado1), dado3(Dado1), dado4(Dado2), dado5(Dado2));
+    (dado1(Dado1), dado2(Dado1), dado3(Dado2), dado4(Dado2), dado5(Dado1));
+    (dado1(Dado1), dado2(Dado2), dado3(Dado2), dado4(Dado1), dado5(Dado1));
+    (dado1(Dado2), dado2(Dado2), dado3(Dado1), dado4(Dado1), dado5(Dado1));
+    (dado1(Dado2), dado2(Dado1), dado3(Dado1), dado4(Dado2), dado5(Dado1));
+    (dado1(Dado2), dado2(Dado1), dado3(Dado2), dado4(Dado1), dado5(Dado1));
+    (dado1(Dado1), dado2(Dado2), dado3(Dado1), dado4(Dado2), dado5(Dado1));
+    (dado1(Dado2), dado2(Dado1), dado3(Dado1), dado4(Dado1), dado5(Dado2)).
+
+full_house_prob_dados(Dados, Prob) :-
+    subquery(full_house_prob, Prob, Dados).
+full_house_prob_dados(_, Prob).
+
+
+% Chequear que una lista sea una secuencia, 
+% que todos los elementos sean consecutivos
+es_sequencia([_]).
+es_sequencia([X,Y|Rest]) :-
+    Y is X + 1,
+    es_sequencia([Y|Rest]).
+
+
+small_straight_prob :- 
+    dado1(Dado1), dado2(Dado2), dado3(Dado3), dado4(Dado4), dado5(Dado5),
+    sort([Dado1, Dado2, Dado3, Dado4, Dado5], Sorted),
+    (length(Sorted, 4);
+    length(Sorted, 5)),
+    es_sequencia(Sorted).
+
+
+small_straight_prob_dados(Dados, Prob) :-
+    subquery(small_straight_prob, Prob, Dados).
+small_straight_prob_dados(_, Prob).
+
+large_straight_prob :- 
+    dado1(Dado1), dado2(Dado2), dado3(Dado3), dado4(Dado4), dado5(Dado5),
+    sort([Dado1, Dado2, Dado3, Dado4, Dado5], Sorted),
+    length(Sorted, 5),
+    es_sequencia(Sorted).
+large_straight_prob_dados(Dados, Prob) :-
+    subquery(large_straight_prob, Prob, Dados).
+large_straight_prob_dados(_, Prob).
 
