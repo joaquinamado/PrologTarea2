@@ -21,3 +21,5 @@ yahtzee_prob_dados(Dados, Puntaje, Prob) :-
 yahtzee_prob_dados(_, Puntaje, Prob).
 
 %query(yahtzee_prob_dados(Dados, Puntaje, Prob)).
+
+query(yahtzee_prob_dados([dado1(1),dado2(1),dado3(1)], Puntaje, Prob)).

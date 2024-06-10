@@ -1,7 +1,20 @@
 :- use_module(library(filesex)).
 :- use_module(library(random)).
+:- use_module(library(readutil)).
 
-consultar_probabilidades(ListaValores):-
+escribir_archivo(Nombre, Contenido) :-
+    open(Nombre, write, Stream),
+    write(Stream, Contenido),
+    close(Stream).
+
+%read_file_to_string(File, String, Options) :-
+    %    setup_call_cleanup(
+    %    open(File, read, Stream, Options),
+    %    read_string(Stream, _, String),
+    %    close(Stream)
+    %).
+
+consultar_probabilidades(Probabilidad, Dados, Query):-
     % Problog debe estar en el path!
     % LINUX
     absolute_file_name(path(problog), Problog, [access(execute)]),
@@ -9,8 +22,19 @@ consultar_probabilidades(ListaValores):-
     %absolute_file_name(path(problog),Problog,[access(exist),extensions([exe])]),
     % Nombre del modelo, que se supone está en el mismo directorio que el fuente
     absolute_file_name(modelo_problog_yahtzee,Modelo,[file_type(prolog)]),
+
+    % Leer el contenido del modelo_problog
+    read_file_to_string(Modelo, ModeloContenido, []),
+
+    % Crear archivo con los valores de los dados
+    % Agrega query y dados al modelo
+    term_string(Dados, DadosString),
+    format(string(QueryString), 'query(~w(~w, Puntaje, Prob)).', [Query, DadosString]),
+    atomic_list_concat([ModeloContenido, '\n', QueryString], ContenidoCompleto),
+    escribir_archivo('nuevo_modelo.pl', ContenidoCompleto),    
     % Invoca a problog con el modelo como argumento, y envía la salida a un pipe
-    process_create(Problog,[Modelo],[stdout(pipe(In))]),
+    absolute_file_name(nuevo_modelo,ModeloEvidencias,[file_type(prolog)]),
+    process_create(Problog,[ModeloEvidencias],[stdout(pipe(In))]),
     % Convierte la salida a un string
     read_string(In,_,Result),
     % Divide la salida
@@ -19,17 +43,24 @@ consultar_probabilidades(ListaValores):-
     writeln(Result),
     % Quito último elemento de la lista
     append(L1,[_],L),
-    lista_valores(L1,ListaValores).
+    writeln(L1),
+    lista_valores(L1,Probabilidad).
 
-lista_valores([X,Y|T],[TermValor|T1]):-
-    % Saco los dos puntos del final
-    split_string(X,"",":",[X1|_]),
-    term_string(TermX,X1),
-    TermX =.. [carta,Cat,Valor],
-    number_string(NumberY,Y),
-    TermValor =.. [p,Cat,Valor,NumberY],
-    lista_valores(T,T1).
-lista_valores([],[]).
+
+% Predicado auxiliar para transformar a términos y a números, como se espera
+lista_valores([X | T], Probabilidad) :-
+    % Separamos la cadena usando ':'
+    split_string(X, ":", "", [Cadena | _]),
+    % Separamos por comas para obtener los componentes
+    split_string(Cadena, ",", "", Componentes),
+    % La probabilidad está en el último componente
+    last(Componentes, UltimoComponente),
+    % Quitamos los caracteres de cierre ')'
+    split_string(UltimoComponente, ")", "", [ProbabilidadString | _]),
+    % Convertimos el string a número
+    number_string(Probabilidad, ProbabilidadString).
+    %lista_valores(T, T1).
+lista_valores([], []).
 
 % Setea el estado inicial del generador de números aleatorios
 iniciar(X):- set_random(seed(X)).

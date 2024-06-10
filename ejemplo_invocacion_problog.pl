@@ -27,10 +27,18 @@ consultar_probabilidades(ListaValores):-
 % Predicado auxiliar para transformar a términos y a números, como se espera
 lista_valores([X,Y|T],[TermValor|T1]):-
     % Saco los dos puntos del final
+    write("X: "), writeln(X),
+    write("Y: "), writeln(Y),
+    write("T: "), writeln(T),
+    write("TermValor: "), writeln(TermValor),
+    write("T1: "), writeln(T1),
     split_string(X,"",":",[X1|_]),
     term_string(TermX,X1),
+    write("X1: "), writeln(X1),
     TermX =.. [carta,Cat,Valor],
+    write("termX: "), writeln(TermX),
     number_string(NumberY,Y),
     TermValor =.. [p,Cat,Valor,NumberY],
+    write("termValor: "), writeln(TermValor),
     lista_valores(T,T1).
 lista_valores([],[]).
