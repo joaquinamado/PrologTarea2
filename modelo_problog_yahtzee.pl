@@ -63,9 +63,11 @@ full_house_prob_dados(_, Prob).
 % Chequear que una lista sea una secuencia, 
 % que todos los elementos sean consecutivos
 es_sequencia([_]).
+es_sequencia([1,3,4,5,6]).
+es_sequencia([1,2,3,4,6]).
 es_sequencia([X,Y|Rest]) :-
-    Y is X + 1,
-    es_sequencia([Y|Rest]).
+    es_sequencia([Y|Rest]),
+    Y is X + 1.
 
 
 small_straight_prob :- 
@@ -85,6 +87,7 @@ large_straight_prob :-
     sort([Dado1, Dado2, Dado3, Dado4, Dado5], Sorted),
     length(Sorted, 5),
     es_sequencia(Sorted).
+
 large_straight_prob_dados(Dados, Prob) :-
     subquery(large_straight_prob, Prob, Dados).
 large_straight_prob_dados(_, Prob).

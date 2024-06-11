@@ -35,11 +35,10 @@ consultar_probabilidades(Probabilidad, Dados, Query):-
     % Divide la salida
     split_string(Result,"\n\t","\r ",L),
     % Escribo la salida
-    writeln(Result),
+    %writeln(Result),
     % Quito último elemento de la lista
     append(L1,[_],L),
     lista_valores(L1,Probabilidad).
-
 
 % Predicado auxiliar para transformar a términos y a números, como se espera
 lista_valores([X | _], Probabilidad) :-
@@ -256,6 +255,15 @@ elegir_categoria_menor_valor(Dados, Tablero, Categoria) :-
     PuntajesCategorias \= [],
     member(Categoria, PuntajesCategorias), !.
 
+% Separa una lista que tiene solo dados repetidos en dos listas, 
+% una con cada elemento distinto.
+separar_repetidos([], _, []).
+separar_repetidos([X,Y|Resto], [X], [Y|Resto]) :-
+    X \= Y.
+separar_repetidos([X,Y|Resto], [X|Resto1], Resto2) :-
+    separar_repetidos([Y|Resto], Resto1, Resto2).
+separar_repetidos([X], [X], []).
+
 
 
     
@@ -379,18 +387,130 @@ cambio_dados(Dados, Tablero, ia_det, Patron) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                  IA_PROB 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-cambio_dados(Dados, Tablero, ia_prob, Patron).
-    % Itero sobre todos los patron posibles
-    % Calculo las porbabilidades de cada juego
-    % Si s(Cat,nil) calculo la probabilidad, sino 0
-    % Elijo el juego con mayor esperanza de puntaje 
-    % Esperanza = Puntaje * Probabilidad
-    % [5,5,5,5,1] -> [0,0,0,0,1] three_of_a_kind * 1 +  four_of_a_kind * 5/6 + yahtzee * 1/6
-    
+%
 
 
+cambio_dados(Dados, Tablero, ia_prob, Patron) :-
+    % Busco todas las categorias con nil en Tablero
+    findall(Cat, member(s(Cat, nil), Tablero), Categorias),
+    %[small_straight, large_straight] 
+    %[three_of_a_kind, four_of_a_kind, yahtzee, numero]
+    %[full_house]
+    % Busco las probabilidades de cada categorías
+    findall(X, (nth0(Index, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
+    sort(0,  @=<, Repetidos,  RepetidosOrdenados),
+    separar_repetidos(RepetidosOrdenados, RepetidosGrupo1, RepetidosGrupo2),
+    sort(Dados, DadosDistintos),
+    transformar_lista(DadosDistintos, DadosDistintosTransformados),
+    consultar_probabilidades(ProbabilidadSml, DadosDistintosTransformados, small_straight_prob_dados),
+    EsperanzaSmall is ProbabilidadSml * 30,
+    consultar_probabilidades(ProbabilidadLrg, DadosDistintosTransformados, large_straight_prob_dados),
+    EsperanzaLarge is ProbabilidadLrg * 40,
+    (member(small_straight, Categorias) ->
+        ( member(large_straight, Categorias) ->
+            EsperanzaEscalera is (EsperanzaSmall + EsperanzaLarge)/2
+        ; 
+            EsperanzaEscalera is EsperanzaSmall
+        ) 
+    ; 
+        ( member(large_straight,Categorias) ->
+            EsperanzaEscalera is EsperanzaLarge
+        ; 
+            EsperanzaEscalera is 0
+        )
+    ),
+    write('Esperanza Escalera: '), writeln(EsperanzaEscalera),
+    transformar_lista(RepetidosOrdenados, RepetidosOrdenadosTransformados),
+    consultar_probabilidades(ProbabilidadFull, RepetidosOrdenadosTransformados, full_house_prob_dados),
+    (member(full_house, Categorias) -> 
+        EsperanzaFull is ProbabilidadFull * 25
+    ; EsperanzaFull is 0
+    ),
+    write('Esperanza Full: '), writeln(EsperanzaFull),
+    length(RepetidosGrupo2, LenG2),
+    ( LenG2 > 2 -> 
+        transformar_lista(RepetidosGrupo2, RepetidosGrupo2Transformados),
+        consultar_probabilidades(ProbabilidadYah, RepetidosGrupo2Transformados, yahtzee_prob_dados),
+        EsperanzaYah is ProbabilidadYah * 50
+    ; 
+        transformar_lista(RepetidosGrupo1, RepetidosGrupo1Transformados),
+        consultar_probabilidades(ProbabilidadYah, RepetidosGrupo1Transformados, yahtzee_prob_dados),
+        EsperanzaYah is ProbabilidadYah * 50
+    ),
+    write('Esperanza Yah: '), writeln(EsperanzaYah),
+    (EsperanzaEscalera > EsperanzaFull -> 
+        (EsperanzaEscalera > EsperanzaYah -> 
+            %HACER PATRON CON DADOS DIFERENTES
+            generar_patron_diferentes(Dados, DadosDistintos, Patron)
+        ; 
+            (EsperanzaYah > EsperanzaFull -> 
+                %HACER PATRON CON DADOS REPETIDOS (GRUPO MAYOR)
+                (LenG2 > 2 -> 
+                    generar_patron(Dados, RepetidosGrupo2, Patron)
+                ;
+                    generar_patron(Dados, RepetidosGrupo1, Patron)
+                )
 
+            ;   
+            %HACER PATRON CON DADOS REPETIDOS (TODOS PARA FULL)
+            generar_patron(Dados, RepetidosOrdenados, Patron)
+            )
+        )
+    ;
+        (EsperanzaFull > EsperanzaYah -> 
+                %HACER PATRON CON DADOS REPETIDOS (TODOS PARA FULL)
+                generar_patron(Dados, RepetidosOrdenados, Patron)
+        ; 
+                %HACER PATRON CON DADOS REPETIDOS (GRUPO MAYOR)
+                (LenG2 > 2 -> 
+                    generar_patron(Dados, RepetidosGrupo2, Patron)
+                ;
+                    generar_patron(Dados, RepetidosGrupo1, Patron)
+                )
+        )
+    ), !.
+
+%Transforma una lista de dados [1,2,3,4,5] en una 
+%lista de términos [dado1(1),dado2(2),dado3(3),dado4(4),dado5(5)]
+transformar_lista(Dados, DadosTransformados) :-
+    transformar_lista_aux(Dados, 1, DadosTransformados).
+
+transformar_lista_aux([], _, []).
+
+transformar_lista_aux([D|R], N, [TermAtom|TR]) :-
+    format(atom(Term), 'dado~w(~w)', [N, D]),
+    atom_to_term(Term, TermAtom, []),
+    N1 is N + 1,
+    transformar_lista_aux(R, N1, TR).
+
+% Predicado principal que genera el Patron
+generar_patron(Dados, DadosPatron, Patron) :-
+    generar_patron_aux(Dados, DadosPatron, Patron).
+
+% Caso base: lista vacía
+generar_patron_aux([], _, []).
+
+% Caso recursivo: llenar la lista Patron
+generar_patron_aux([D|R], DadosPatron, [P|PR]) :-
+    ( member(D, DadosPatron) -> P = 0 ; P = 1 ),
+    generar_patron_aux(R, DadosPatron, PR).
+
+% Predicado principal que genera el Patron
+generar_patron_diferentes(Dados, DadosDiferentes, Patron) :-
+    generar_patron_diferente_aux(Dados, DadosDiferentes, [], Patron).
+
+% Caso base: lista vacía
+generar_patron_diferente_aux([], _,_, []).
+
+% Caso recursivo: llenar la lista Patron
+generar_patron_diferente_aux([D|R], DadosDiferentes, Usados, [P|PR]) :-
+    ( memberchk(D, DadosDiferentes), \+ memberchk(D, Usados) ->
+        P = 0,
+        generar_patron_diferente_aux(R, DadosDiferentes, [D|Usados], PR)
+    ; 
+        P = 1,
+        generar_patron_diferente_aux(R, DadosDiferentes, Usados, PR)
+    ).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %eleccion_slot(+Dados,+Tablero,+Estrategia,-Categoria)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
