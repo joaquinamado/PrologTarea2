@@ -393,6 +393,7 @@ cambio_dados(Dados, Tablero, ia_det, Patron) :-
 cambio_dados(Dados, Tablero, ia_prob, Patron) :-
     % Busco todas las categorias con nil en Tablero
     findall(Cat, member(s(Cat, nil), Tablero), Categorias),
+    % Separamos en 3 grupos, calculamos su esperanza y elegimos la mayor 
     %[small_straight, large_straight] 
     %[three_of_a_kind, four_of_a_kind, yahtzee, numero]
     %[full_house]
@@ -483,26 +484,24 @@ transformar_lista_aux([D|R], N, [TermAtom|TR]) :-
     N1 is N + 1,
     transformar_lista_aux(R, N1, TR).
 
-% Predicado principal que genera el Patron
+% Genero patron para los casos con dados repetidos 
+% [yahtzee, full_house, three_of_a_kind, four_of_a_kind]
 generar_patron(Dados, DadosPatron, Patron) :-
     generar_patron_aux(Dados, DadosPatron, Patron).
 
-% Caso base: lista vacía
 generar_patron_aux([], _, []).
 
-% Caso recursivo: llenar la lista Patron
 generar_patron_aux([D|R], DadosPatron, [P|PR]) :-
     ( member(D, DadosPatron) -> P = 0 ; P = 1 ),
     generar_patron_aux(R, DadosPatron, PR).
 
-% Predicado principal que genera el Patron
+% Genero el patron para los casos con dados diferentes
+% [small_straight, large_straight]
 generar_patron_diferentes(Dados, DadosDiferentes, Patron) :-
     generar_patron_diferente_aux(Dados, DadosDiferentes, [], Patron).
 
-% Caso base: lista vacía
 generar_patron_diferente_aux([], _,_, []).
 
-% Caso recursivo: llenar la lista Patron
 generar_patron_diferente_aux([D|R], DadosDiferentes, Usados, [P|PR]) :-
     ( memberchk(D, DadosDiferentes), \+ memberchk(D, Usados) ->
         P = 0,
@@ -511,6 +510,8 @@ generar_patron_diferente_aux([D|R], DadosDiferentes, Usados, [P|PR]) :-
         P = 1,
         generar_patron_diferente_aux(R, DadosDiferentes, Usados, PR)
     ).
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %eleccion_slot(+Dados,+Tablero,+Estrategia,-Categoria)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
