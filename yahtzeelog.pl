@@ -220,7 +220,7 @@ listar_categorias_de_repetidos(Lista, Categorias) :-
 
 listar_categorias_de_repetidos_acum([], Acumulador, Acumulador).
 listar_categorias_de_repetidos_acum([1|T], Acumulador, Categorias) :-
-    listar_categorias_de_repetidos_acum(T, [ones|Acumulador], Categorias).
+    listar_categorias_de_repetidos_acum(T, [aces|Acumulador], Categorias).
 listar_categorias_de_repetidos_acum([2|T], Acumulador, Categorias) :-
     listar_categorias_de_repetidos_acum(T, [twos|Acumulador], Categorias).
 listar_categorias_de_repetidos_acum([3|T], Acumulador, Categorias) :-
@@ -430,7 +430,6 @@ cambio_dados(Dados, Tablero, ia_prob, Patron) :-
     write('Esperanza Full: '), writeln(EsperanzaFull),
     length(RepetidosGrupo2, LenG2),
     ( LenG2 > 2 -> 
-        writeln('Repetidos Grupo 2 entra: '),
         transformar_lista(RepetidosGrupo2, RepetidosGrupo2Transformados),
         (member(yahtzee, Categorias) ->
             consultar_probabilidades(ProbabilidadYah, RepetidosGrupo2Transformados, yahtzee_prob_dados),
@@ -459,7 +458,6 @@ cambio_dados(Dados, Tablero, ia_prob, Patron) :-
             EsperanzaJuegos is (EsperanzaYah + EsperanzaTOK + EsperanzaFOK)/3
         )
     ; 
-        writeln('Repetidos Grupo 1 entra: '),
         transformar_lista(RepetidosGrupo1, RepetidosGrupo1Transformados),
         (member(yahtzee, Categorias) ->
             consultar_probabilidades(ProbabilidadYah, RepetidosGrupo1Transformados, yahtzee_prob_dados),
@@ -479,7 +477,6 @@ cambio_dados(Dados, Tablero, ia_prob, Patron) :-
         ;
             EsperanzaFOK is 0
         ),
-        write('Repetidos Grupo 1: '), writeln(RepetidosGrupo1),
         (length(RepetidosGrupo1, LenG1), LenG1 > 0 ->
             sort(RepetidosGrupo1, Repetidos1ListaSolo),
             sort(RepetidosGrupo1, [Elem1|_]),
@@ -495,13 +492,17 @@ cambio_dados(Dados, Tablero, ia_prob, Patron) :-
     ),
     write('Esperanza Juegos: '), writeln(EsperanzaJuegos),
     (EsperanzaJuegos = EsperanzaFull, EsperanzaJuegos = EsperanzaEscalera, EsperanzaJuegos = 0 -> 
-        writeln('Esperanzas = 0'),
         listar_categorias_de_repetidos(Dados, CategoriasDados),
         findall(CatDado, (member(CatDado, Categorias), member(CatDado, CategoriasDados)), CategoriasLibres),
-        writeln('Categorias Libres: '), writeln(CategoriasLibres),
-        member(CategoriaLibre, CategoriasLibres),
-        writeln('Categoria Libre: '), writeln(CategoriaLibre),
-        generar_patron_de_categoria(Dados,CategoriaLibre,Patron)
+        write('Categorias Libres: '), writeln(CategoriasLibres),
+        write('Categorias Dados: '), writeln(CategoriasDados),
+        write('Categorias Categorias: '), writeln(Categorias),
+        (member(CategoriaLibre, CategoriasLibres) ->
+            writeln('Categoria Libre: '), writeln(CategoriaLibre),
+            generar_patron_de_categoria(Dados,CategoriaLibre,Patron)
+        ; 
+            Patron = [1,1,1,1,1]
+        )
     ;
         (EsperanzaEscalera > EsperanzaFull -> 
             (EsperanzaEscalera > EsperanzaJuegos -> 
