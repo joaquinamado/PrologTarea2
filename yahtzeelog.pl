@@ -372,7 +372,25 @@ cambio_dados(Dados, _, humano, Patron) :-
 cambio_dados(Dados, Tablero, ia_det, Patron) :-
     es_juego(Dados,Tablero, Juegos),
     Juegos \= [],
-    Patron = [0,0,0,0,0], !.
+    (
+        member(yahtzee, Juegos) -> Patron = [0,0,0,0,0]
+    ; 
+        (
+            member(large_straight, Juegos) -> Patron = [0,0,0,0,0]
+        ;
+            (member(small_straight, Juegos) -> 
+                sort(Dados,DadosDiferentes),
+                generar_patron_diferentes(Dados, DadosDiferentes, Patron)
+            ;
+                ( member(full_house, Juegos) -> 
+                    Patron = [1,1,1,1,1]    
+                ;
+                    findall(X, (nth0(_, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
+                    patron_repetidos(Dados, Repetidos, Patron)
+                )
+            )
+        )
+    ), !.
 cambio_dados(Dados, _, ia_det, Patron) :-
     sort(Dados, DadosOrdenados),
     length(DadosOrdenados, Len),
@@ -381,6 +399,7 @@ cambio_dados(Dados, _, ia_det, Patron) :-
 cambio_dados(Dados, _, ia_det, Patron) :-
     % Buscamos los dados repetidos
     % @TODO ver si Tablero tiene en nil la categoría de los dados repetidos y los juegos con dados repetidos
+    %findall(Cat, member(s(Cat, nil), Tablero), Categorias),
     findall(X, (nth0(_, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
     patron_repetidos(Dados, Repetidos, Patron), !.
 
@@ -402,19 +421,22 @@ cambio_dados(Dados, Tablero, ia_prob, Patron) :-
     sort(0,  @=<, Repetidos,  RepetidosOrdenados),
     separar_repetidos(RepetidosOrdenados, RepetidosGrupo1, RepetidosGrupo2),
     sort(Dados, DadosDistintos),
-    transformar_lista(DadosDistintos, DadosDistintosTransformados),
-    consultar_probabilidades(ProbabilidadSml, DadosDistintosTransformados, small_straight_prob_dados),
-    EsperanzaSmall is ProbabilidadSml * 30,
-    consultar_probabilidades(ProbabilidadLrg, DadosDistintosTransformados, large_straight_prob_dados),
-    EsperanzaLarge is ProbabilidadLrg * 40,
     (member(small_straight, Categorias) ->
+        transformar_lista(DadosDistintos, DadosDistintosTransformados),
+        consultar_probabilidades(ProbabilidadSml, DadosDistintosTransformados, small_straight_prob_dados),
+        EsperanzaSmall is ProbabilidadSml * 30,
         ( member(large_straight, Categorias) ->
+            consultar_probabilidades(ProbabilidadLrg, DadosDistintosTransformados, large_straight_prob_dados),
+            EsperanzaLarge is ProbabilidadLrg * 40,
             EsperanzaEscalera is (EsperanzaSmall + EsperanzaLarge)/2
         ; 
             EsperanzaEscalera is EsperanzaSmall
         ) 
     ; 
         ( member(large_straight,Categorias) ->
+        transformar_lista(DadosDistintos, DadosDistintosTransformados),
+            consultar_probabilidades(ProbabilidadLrg, DadosDistintosTransformados, large_straight_prob_dados),
+            EsperanzaLarge is ProbabilidadLrg * 40,
             EsperanzaEscalera is EsperanzaLarge
         ; 
             EsperanzaEscalera is 0
@@ -605,9 +627,11 @@ generar_patron_diferente_aux([D|R], DadosDiferentes, Usados, [P|PR]) :-
 %                   HUMANO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 eleccion_slot(Dados, Tablero, humano, Categoria) :-
+    findall(Cat, member(s(Cat, nil), Tablero), Categorias),
     write('Dados: '), nl,
     write(Dados), nl,
     write('Ingrese la categoría en la que desea anotar los puntos:'), nl,
+    write('Categorías disponibles: '), writeln(Categorias),
     read(Categoria),
     % Verificar que la categoría sea válida
     member(Categoria, [aces,twos,threes,fours,fives,sixes,three_of_a_kind,four_of_a_kind,full_house,small_straight,large_straight,yahtzee,chance]),
