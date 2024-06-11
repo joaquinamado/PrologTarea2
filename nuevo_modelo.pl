@@ -93,4 +93,4 @@ large_straight_prob_dados(Dados, Prob) :-
 large_straight_prob_dados(_, Prob).
 
 
-query(yahtzee_prob_dados([dado1(2),dado2(2),dado3(2)], Prob)).
+query(full_house_prob_dados([dado1(1),dado2(1)], Prob)).

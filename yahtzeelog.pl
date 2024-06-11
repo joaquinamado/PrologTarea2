@@ -378,10 +378,10 @@ cambio_dados(Dados, _, ia_det, Patron) :-
     length(DadosOrdenados, Len),
     Len == 5,
     Patron = [1,1,1,1,1], !.
-cambio_dados(Dados, Tablero, ia_det, Patron) :-
+cambio_dados(Dados, _, ia_det, Patron) :-
     % Buscamos los dados repetidos
     % @TODO ver si Tablero tiene en nil la categoría de los dados repetidos y los juegos con dados repetidos
-    findall(X, (nth0(Index, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
+    findall(X, (nth0(_, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
     patron_repetidos(Dados, Repetidos, Patron), !.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -398,7 +398,7 @@ cambio_dados(Dados, Tablero, ia_prob, Patron) :-
     %[three_of_a_kind, four_of_a_kind, yahtzee, numero]
     %[full_house]
     % Busco las probabilidades de cada categorías
-    findall(X, (nth0(Index, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
+    findall(X, (nth0(_, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
     sort(0,  @=<, Repetidos,  RepetidosOrdenados),
     separar_repetidos(RepetidosOrdenados, RepetidosGrupo1, RepetidosGrupo2),
     sort(Dados, DadosDistintos),
@@ -430,44 +430,109 @@ cambio_dados(Dados, Tablero, ia_prob, Patron) :-
     write('Esperanza Full: '), writeln(EsperanzaFull),
     length(RepetidosGrupo2, LenG2),
     ( LenG2 > 2 -> 
+        writeln('Repetidos Grupo 2 entra: '),
         transformar_lista(RepetidosGrupo2, RepetidosGrupo2Transformados),
-        consultar_probabilidades(ProbabilidadYah, RepetidosGrupo2Transformados, yahtzee_prob_dados),
-        EsperanzaYah is ProbabilidadYah * 50
-    ; 
-        transformar_lista(RepetidosGrupo1, RepetidosGrupo1Transformados),
-        consultar_probabilidades(ProbabilidadYah, RepetidosGrupo1Transformados, yahtzee_prob_dados),
-        EsperanzaYah is ProbabilidadYah * 50
-    ),
-    write('Esperanza Yah: '), writeln(EsperanzaYah),
-    (EsperanzaEscalera > EsperanzaFull -> 
-        (EsperanzaEscalera > EsperanzaYah -> 
-            %HACER PATRON CON DADOS DIFERENTES
-            generar_patron_diferentes(Dados, DadosDistintos, Patron)
+        (member(yahtzee, Categorias) ->
+            consultar_probabilidades(ProbabilidadYah, RepetidosGrupo2Transformados, yahtzee_prob_dados),
+            EsperanzaYah is ProbabilidadYah * 50
+        ;
+            EsperanzaYah is 0
+        ),
+        (member(three_of_a_kind, Categorias) ->
+            consultar_probabilidades(ProbabilidadTOK, RepetidosGrupo2Transformados, three_of_a_kind_prob_dados),
+            EsperanzaTOK is ProbabilidadTOK * 20
         ; 
-            (EsperanzaYah > EsperanzaFull -> 
-                %HACER PATRON CON DADOS REPETIDOS (GRUPO MAYOR)
-                (LenG2 > 2 -> 
-                    generar_patron(Dados, RepetidosGrupo2, Patron)
-                ;
-                    generar_patron(Dados, RepetidosGrupo1, Patron)
-                )
-
-            ;   
-            %HACER PATRON CON DADOS REPETIDOS (TODOS PARA FULL)
-            generar_patron(Dados, RepetidosOrdenados, Patron)
-            )
+            EsperanzaTOK is 0
+        ),
+        (member(four_of_a_kind, Categorias) ->
+            consultar_probabilidades(ProbabilidadFOK, RepetidosGrupo2Transformados, four_of_a_kind_prob_dados),
+            EsperanzaFOK is ProbabilidadFOK * 20
+        ;
+            EsperanzaFOK is 0
+        ),
+        sort(RepetidosGrupo2, Repetidos2ListaSolo),
+        sort(RepetidosGrupo2, [Elem|_]),
+        listar_categorias_de_repetidos(Repetidos2ListaSolo, [Cat]),
+        (member(Cat, Categorias) -> 
+            EsperanzaJuegos is (EsperanzaYah + EsperanzaTOK + EsperanzaFOK + Elem*3)/3
+        ;
+            EsperanzaJuegos is (EsperanzaYah + EsperanzaTOK + EsperanzaFOK)/3
         )
+    ; 
+        writeln('Repetidos Grupo 1 entra: '),
+        transformar_lista(RepetidosGrupo1, RepetidosGrupo1Transformados),
+        (member(yahtzee, Categorias) ->
+            consultar_probabilidades(ProbabilidadYah, RepetidosGrupo1Transformados, yahtzee_prob_dados),
+            EsperanzaYah is ProbabilidadYah * 50
+        ;
+            EsperanzaYah is 0
+        ),
+        (member(three_of_a_kind, Categorias) ->
+            consultar_probabilidades(ProbabilidadTOK, RepetidosGrupo1Transformados, three_of_a_kind_prob_dados),
+            EsperanzaTOK is ProbabilidadTOK * 20
+        ; 
+            EsperanzaTOK is 0
+        ),
+        (member(four_of_a_kind, Categorias) ->
+            consultar_probabilidades(ProbabilidadFOK, RepetidosGrupo1Transformados, four_of_a_kind_prob_dados),
+            EsperanzaFOK is ProbabilidadFOK * 20
+        ;
+            EsperanzaFOK is 0
+        ),
+        write('Repetidos Grupo 1: '), writeln(RepetidosGrupo1),
+        (length(RepetidosGrupo1, LenG1), LenG1 > 0 ->
+            sort(RepetidosGrupo1, Repetidos1ListaSolo),
+            sort(RepetidosGrupo1, [Elem1|_]),
+            listar_categorias_de_repetidos(Repetidos1ListaSolo, [Cat]),
+            (member(Cat, Categorias) -> 
+                EsperanzaJuegos is (EsperanzaYah + EsperanzaTOK + EsperanzaFOK + Elem1*3)/3
+            ;
+                EsperanzaJuegos is (EsperanzaYah + EsperanzaTOK + EsperanzaFOK)/3
+            )
+        ;
+            EsperanzaJuegos is (EsperanzaYah + EsperanzaTOK + EsperanzaFOK)/3
+        )
+    ),
+    write('Esperanza Juegos: '), writeln(EsperanzaJuegos),
+    (EsperanzaJuegos = EsperanzaFull, EsperanzaJuegos = EsperanzaEscalera, EsperanzaJuegos = 0 -> 
+        writeln('Esperanzas = 0'),
+        listar_categorias_de_repetidos(Dados, CategoriasDados),
+        findall(CatDado, (member(CatDado, Categorias), member(CatDado, CategoriasDados)), CategoriasLibres),
+        writeln('Categorias Libres: '), writeln(CategoriasLibres),
+        member(CategoriaLibre, CategoriasLibres),
+        writeln('Categoria Libre: '), writeln(CategoriaLibre),
+        generar_patron_de_categoria(Dados,CategoriaLibre,Patron)
     ;
-        (EsperanzaFull > EsperanzaYah -> 
+        (EsperanzaEscalera > EsperanzaFull -> 
+            (EsperanzaEscalera > EsperanzaJuegos -> 
+                %HACER PATRON CON DADOS DIFERENTES
+                generar_patron_diferentes(Dados, DadosDistintos, Patron)
+            ; 
+                (EsperanzaJuegos > EsperanzaFull -> 
+                    %HACER PATRON CON DADOS REPETIDOS (GRUPO MAYOR)
+                    (LenG2 > 2 -> 
+                        generar_patron(Dados, RepetidosGrupo2, Patron)
+                    ;
+                        generar_patron(Dados, RepetidosGrupo1, Patron)
+                    )
+
+                ;   
                 %HACER PATRON CON DADOS REPETIDOS (TODOS PARA FULL)
                 generar_patron(Dados, RepetidosOrdenados, Patron)
-        ; 
-                %HACER PATRON CON DADOS REPETIDOS (GRUPO MAYOR)
-                (LenG2 > 2 -> 
-                    generar_patron(Dados, RepetidosGrupo2, Patron)
-                ;
-                    generar_patron(Dados, RepetidosGrupo1, Patron)
                 )
+            )
+        ;
+            (EsperanzaFull > EsperanzaJuegos -> 
+                    %HACER PATRON CON DADOS REPETIDOS (TODOS PARA FULL)
+                    generar_patron(Dados, RepetidosOrdenados, Patron)
+            ; 
+                    %HACER PATRON CON DADOS REPETIDOS (GRUPO MAYOR)
+                    (LenG2 > 2 -> 
+                        generar_patron(Dados, RepetidosGrupo2, Patron)
+                    ;
+                        generar_patron(Dados, RepetidosGrupo1, Patron)
+                    )
+            )
         )
     ), !.
 
@@ -483,6 +548,25 @@ transformar_lista_aux([D|R], N, [TermAtom|TR]) :-
     atom_to_term(Term, TermAtom, []),
     N1 is N + 1,
     transformar_lista_aux(R, N1, TR).
+
+% Genero patron para los casos sin dados repetidos 
+% [aces, twos, threes, fours, fives, sixes]
+generar_patron_de_categoria(Dados, Categoria, Patron) :-
+    valor_categoria(Categoria, Valor),
+    generar_patron_de_categoria_aux(Dados, Valor, Patron).
+
+valor_categoria(aces, 1).
+valor_categoria(twos, 2).
+valor_categoria(threes, 3).
+valor_categoria(fours, 4).
+valor_categoria(fives, 5).
+valor_categoria(sixes, 6).
+
+generar_patron_de_categoria_aux([], _, []).
+
+generar_patron_de_categoria_aux([D|R], Valor, [P|PR]) :-
+    ( D =:= Valor -> P = 0 ; P = 1 ),
+    generar_patron_de_categoria_aux(R, Valor, PR).
 
 % Genero patron para los casos con dados repetidos 
 % [yahtzee, full_house, three_of_a_kind, four_of_a_kind]
@@ -552,14 +636,32 @@ eleccion_slot(_, Tablero, ia_det, Categoria) :-
     % Cuarto caso de elección: si no se cumple ninguno de los casos anteriores, 
     % elegir la categoria de menor valor
     member(s(Categoria, nil), Tablero),
-    member(Categorias, [aces,twos,threes,fours,fives,sixes,three_of_a_kind,four_of_a_kind,full_house,small_straight,large_straight,yahtzee,chance]), !.
+    member(Categoria, [aces,twos,threes,fours,fives,sixes,three_of_a_kind,four_of_a_kind,full_house,small_straight,large_straight,yahtzee,chance]), !.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                  IA_PROB 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-eleccion_slot(Dados, Tablero, ia_prob, Categoria).
+eleccion_slot(Dados, Tablero, ia_prob, Categoria) :-
+    es_juego(Dados, Tablero, Juegos),
+    Juegos \= [],
+    elegir_mejor_juego(Categoria, Juegos), !.
+eleccion_slot(Dados, Tablero, ia_prob, Categoria) :-
+    % Segundo caso de elección: si hay dados repetidos, elegir la categoría de los dados repetidos 
+    findall(X, (member(X, Dados), contar(Dados, X, Count), Count > 1), RepetidosDuplicados),
+    sort(RepetidosDuplicados, Repetidos),
+    Repetidos \= [],
+    elegir_categoria_repetida(Tablero, Categoria, Repetidos), !.
+eleccion_slot(Dados, Tablero, ia_prob, Categoria) :-
+    % Tercer caso de elección: si no hay dados repetidos, elegir la categoría con menor valor
+    ( member(s(chance, nil), Tablero) -> Categoria = chance
+    ; elegir_categoria_menor_valor(Dados,Tablero, Categoria) ), !.
+eleccion_slot(_, Tablero, ia_prob, Categoria) :-
+    % Cuarto caso de elección: si no se cumple ninguno de los casos anteriores, 
+    % elegir la categoria de menor valor
+    member(s(Categoria, nil), Tablero),
+    member(Categoria, [aces,twos,threes,fours,fives,sixes,three_of_a_kind,four_of_a_kind,full_house,small_straight,large_straight,yahtzee,chance]), !.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                 YAHTZEELOG 
@@ -613,6 +715,7 @@ ronda(L1,_,Tablero,Tablero):-
     categorias(C),
     length(C,L),
     L1 =:= L+1.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                  HUMANO
