@@ -153,9 +153,9 @@ large_straight(List) :-
     member(6, List).
 
 
-yahtzee(List, [X|_], 5) :-
-    member(X, List),
-    contar(List, X, 5), !.
+yahtzee(List) :-
+    sort(List, Sorted),
+    length(Sorted, 1).
 
 puntaje_tablero_aux([], 0, 0).
 puntaje_tablero_aux([s(Cat,P)|T], PuntajeNums, PuntajeJuegos):-
@@ -189,7 +189,7 @@ juego_categoria(Dados, Tablero, large_straight) :-
     large_straight(Dados).
 juego_categoria(Dados, Tablero, yahtzee) :-
     member(s(yahtzee, nil), Tablero),
-    yahtzee(Dados, Dados, 5).
+    yahtzee(Dados).
 
 
 % Crear patron en base a los dados repetidos
@@ -307,7 +307,7 @@ puntaje(Dados, large_straight, Puntos):-
 puntaje(_, large_straight, Puntos):-
     Puntos is 0.
 puntaje(Dados, yahtzee, Puntos):-
-    yahtzee(Dados, Dados, 5),
+    yahtzee(Dados),
     Puntos is 50, !.
 puntaje(_, yahtzee, Puntos):-
     Puntos is 0.
@@ -371,7 +371,7 @@ cambio_dados(Dados, Tablero, ia_det, Patron) :-
                 generar_patron_diferentes(Dados, DadosDiferentes, Patron)
             ;
                 ( member(full_house, Juegos) -> 
-                    Patron = [1,1,1,1,1]    
+                    Patron = [0,0,0,0,0]    
                 ;
                     findall(X, (nth0(_, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
                     patron_repetidos(Dados, Repetidos, Patron)
@@ -693,7 +693,7 @@ yahtzeelog(Estrategia,Seed):-
 partida(humano,TableroFinal):-
     categorias(C),
     tablero_inicial(C,Tablero),
-    ronda(1,humano,Tablero,TableroFinal).
+    ronda(1,humano,Tablero,TableroFinal), !.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                  IA_PROB 
@@ -702,7 +702,7 @@ partida(humano,TableroFinal):-
 partida(ia_prob,TableroFinal):-
     categorias(C),
     tablero_inicial(C,Tablero),
-    ronda(1,ia_prob,Tablero,TableroFinal).
+    ronda(1,ia_prob,Tablero,TableroFinal), !.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                  IA_DET 
@@ -711,13 +711,14 @@ partida(ia_prob,TableroFinal):-
 partida(ia_det,TableroFinal):-
     categorias(C),
     tablero_inicial(C,Tablero),
-    ronda(1,ia_det,Tablero,TableroFinal).
+    ronda(1,ia_det,Tablero,TableroFinal), !.
 
 
 % Ronda de juego
 % NumRonda es el número de ronda
 % Tablero es el Tablero hasta el momento
 % TableroSalida es el Tablero una vez finalizada la ronda
+
 ronda(L1,_,Tablero,Tablero):-
     categorias(C),
     length(C,L),
