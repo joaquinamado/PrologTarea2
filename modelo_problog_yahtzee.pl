@@ -47,12 +47,14 @@ three_of_a_kind_prob_dados(_, Prob).
 
 full_house_prob :- 
     (dado1(Dado1), dado2(Dado1), dado3(Dado1), dado4(Dado2), dado5(Dado2));
+    (dado1(Dado1), dado2(Dado1), dado3(Dado2), dado4(Dado1), dado5(Dado2));
     (dado1(Dado1), dado2(Dado1), dado3(Dado2), dado4(Dado2), dado5(Dado1));
     (dado1(Dado1), dado2(Dado2), dado3(Dado2), dado4(Dado1), dado5(Dado1));
     (dado1(Dado2), dado2(Dado2), dado3(Dado1), dado4(Dado1), dado5(Dado1));
     (dado1(Dado2), dado2(Dado1), dado3(Dado1), dado4(Dado2), dado5(Dado1));
     (dado1(Dado2), dado2(Dado1), dado3(Dado2), dado4(Dado1), dado5(Dado1));
     (dado1(Dado1), dado2(Dado2), dado3(Dado1), dado4(Dado2), dado5(Dado1));
+    (dado1(Dado1), dado2(Dado2), dado3(Dado1), dado4(Dado1), dado5(Dado2));
     (dado1(Dado2), dado2(Dado1), dado3(Dado1), dado4(Dado1), dado5(Dado2)).
 
 full_house_prob_dados(Dados, Prob) :-
