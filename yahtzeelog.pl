@@ -398,8 +398,6 @@ cambio_dados(Dados, _, ia_det, Patron) :-
     Patron = [1,1,1,1,1], !.
 cambio_dados(Dados, _, ia_det, Patron) :-
     % Buscamos los dados repetidos
-    % @TODO ver si Tablero tiene en nil la categoría de los dados repetidos y los juegos con dados repetidos
-    %findall(Cat, member(s(Cat, nil), Tablero), Categorias),
     findall(X, (nth0(_, Dados, X), contar(Dados, X, Count), Count > 1), Repetidos),
     patron_repetidos(Dados, Repetidos, Patron), !.
 
@@ -442,14 +440,14 @@ cambio_dados(Dados, Tablero, ia_prob, Patron) :-
             EsperanzaEscalera is 0
         )
     ),
-    write('Esperanza Escalera: '), writeln(EsperanzaEscalera),
+    %write('Esperanza Escalera: '), writeln(EsperanzaEscalera),
     transformar_lista(RepetidosOrdenados, RepetidosOrdenadosTransformados),
     consultar_probabilidades(ProbabilidadFull, RepetidosOrdenadosTransformados, full_house_prob_dados),
     (member(full_house, Categorias) -> 
         EsperanzaFull is ProbabilidadFull * 25
     ; EsperanzaFull is 0
     ),
-    write('Esperanza Full: '), writeln(EsperanzaFull),
+    %write('Esperanza Full: '), writeln(EsperanzaFull),
     length(RepetidosGrupo2, LenG2),
     ( LenG2 > 2 -> 
         transformar_lista(RepetidosGrupo2, RepetidosGrupo2Transformados),
@@ -512,15 +510,11 @@ cambio_dados(Dados, Tablero, ia_prob, Patron) :-
             EsperanzaJuegos is (EsperanzaYah + EsperanzaTOK + EsperanzaFOK)/3
         )
     ),
-    write('Esperanza Juegos: '), writeln(EsperanzaJuegos),
+    %write('Esperanza Juegos: '), writeln(EsperanzaJuegos),
     (EsperanzaJuegos = EsperanzaFull, EsperanzaJuegos = EsperanzaEscalera, EsperanzaJuegos = 0 -> 
         listar_categorias_de_repetidos(Dados, CategoriasDados),
         findall(CatDado, (member(CatDado, Categorias), member(CatDado, CategoriasDados)), CategoriasLibres),
-        write('Categorias Libres: '), writeln(CategoriasLibres),
-        write('Categorias Dados: '), writeln(CategoriasDados),
-        write('Categorias Categorias: '), writeln(Categorias),
         (member(CategoriaLibre, CategoriasLibres) ->
-            writeln('Categoria Libre: '), writeln(CategoriaLibre),
             generar_patron_de_categoria(Dados,CategoriaLibre,Patron)
         ; 
             Patron = [1,1,1,1,1]
@@ -788,15 +782,27 @@ ronda(NumRonda,ia_prob,Tablero,TableroSalida):-
     write('Primer Lanzamiento:'),writeln(Dados),
     cambio_dados(Dados,Tablero,ia_prob,Patron),
     write('Patron sugerido:'),writeln(Patron),
-    lanzamiento(Dados,Patron,Dados1),
-    write('Segundo Lanzamiento:'),writeln(Dados1),
-    cambio_dados(Dados1,Tablero,ia_prob,Patron1),
-    write('Patron sugerido:'),writeln(Patron1),
-    lanzamiento(Dados1,Patron1,Dados2),
-    write('Tercer Lanzamiento:'),writeln(Dados2),
-    eleccion_slot(Dados2,Tablero,ia_prob,Slot),
-    write('Slot elegido:'),writeln(Slot),
-    puntaje(Dados2,Slot,Punt),
+    (Patron = [0,0,0,0,0] -> 
+        eleccion_slot(Dados,Tablero,ia_prob,Slot),
+        write('Slot elegido:'),writeln(Slot),
+        puntaje(Dados,Slot,Punt)
+    ;
+        lanzamiento(Dados,Patron,Dados1),
+        write('Segundo Lanzamiento:'),writeln(Dados1),
+        cambio_dados(Dados1,Tablero,ia_prob,Patron1),
+        write('Patron sugerido:'),writeln(Patron1),
+        (Patron1 = [0,0,0,0,0] -> 
+            eleccion_slot(Dados1,Tablero,ia_prob,Slot),
+            write('Slot elegido:'),writeln(Slot),
+            puntaje(Dados1,Slot,Punt)
+        ;
+            lanzamiento(Dados1,Patron1,Dados2),
+            write('Tercer Lanzamiento:'),writeln(Dados2),
+            eleccion_slot(Dados2,Tablero,ia_prob,Slot),
+            write('Slot elegido:'),writeln(Slot),
+            puntaje(Dados2,Slot,Punt)
+        )
+    ),
     ajustar_tablero(Tablero,Slot,Punt,Tablero2),
     NumRonda1 is NumRonda +1, 
     writeln('Siguiente ronda...'),

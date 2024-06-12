@@ -93,4 +93,4 @@ large_straight_prob_dados(Dados, Prob) :-
 large_straight_prob_dados(_, Prob).
 
 
-query(four_of_a_kind_prob_dados([dado1(3),dado2(3)], Prob)).
+query(full_house_prob_dados([dado1(6),dado2(6)], Prob)).
