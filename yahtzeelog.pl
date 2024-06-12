@@ -98,26 +98,22 @@ contar([X|T],Y,N):-
     contar(T,Y,N1),
     N is N1+1.
 
-three_of_a_kind(List, true, X) :-
+three_of_a_kind(List, X) :-
     member(X, [1, 2, 3, 4, 5, 6]),
     contar(List, X, Count),
     Count >= 3, !.
 
-three_of_a_kind(_, false, _).
-
-four_of_a_kind(List, true) :-
+four_of_a_kind(List) :-
     member(X, [1, 2, 3, 4, 5, 6]),
     contar(List, X, Count),
     Count >= 4, !.
-
-four_of_a_kind(_, false).
 
 sum_list([], 0).
 sum_list([H|T], Sum) :-
     sum_list(T, TailSum),
     Sum is TailSum + H.
 
-is_full_house(List, true) :-
+is_full_house(List) :-
     member(X, [1, 2, 3, 4, 5, 6]),
     contar(List, X, Count),
     Count = 3,
@@ -126,38 +122,35 @@ is_full_house(List, true) :-
     Count2 = 2,
     X \= Y, !.
 
-is_full_house(_, false).
 
-small_straight(List, true) :-
+small_straight(List) :-
     member(1, List),
     member(2, List),
     member(3, List),
     member(4, List).
-small_straight(List, true) :-
+small_straight(List) :-
     member(2, List),
     member(3, List),
     member(4, List),
     member(5, List).
-small_straight(List, true) :-
+small_straight(List) :-
     member(3, List),
     member(4, List),
     member(5, List),
     member(6, List).
-small_straight(_, false).
 
-large_straight(List, true) :-
+large_straight(List) :-
     member(1, List),
     member(2, List),
     member(3, List),
     member(4, List),
     member(5, List).
-large_straight(List, true) :-
+large_straight(List) :-
     member(2, List),
     member(3, List),
     member(4, List),
     member(5, List),
     member(6, List).
-large_straight(_, false).
 
 
 yahtzee(List, [X|_], 5) :-
@@ -181,19 +174,19 @@ es_juego(Dados, Tablero, Juego) :-
 
 juego_categoria(Dados, Tablero, three_of_a_kind) :-
     member(s(three_of_a_kind, nil), Tablero),
-    three_of_a_kind(Dados, true, _).
+    three_of_a_kind(Dados, _).
 juego_categoria(Dados, Tablero, four_of_a_kind) :-
     member(s(four_of_a_kind, nil), Tablero),
-    four_of_a_kind(Dados, true).
+    four_of_a_kind(Dados).
 juego_categoria(Dados, Tablero, full_house) :-
     member(s(full_house, nil), Tablero),
-    is_full_house(Dados, true).
+    is_full_house(Dados).
 juego_categoria(Dados, Tablero, small_straight) :-
     member(s(small_straight, nil), Tablero),
-    small_straight(Dados, true).
+    small_straight(Dados).
 juego_categoria(Dados, Tablero, large_straight) :-
     member(s(large_straight, nil), Tablero),
-    large_straight(Dados, true).
+    large_straight(Dados).
 juego_categoria(Dados, Tablero, yahtzee) :-
     member(s(yahtzee, nil), Tablero),
     yahtzee(Dados, Dados, 5).
@@ -289,34 +282,29 @@ puntaje(Dados, sixes, Puntos):-
     contar(Dados, 6, Elems),
     Puntos is Elems * 6.
 puntaje(Dados, three_of_a_kind, Puntos):-
-    three_of_a_kind(Dados, true, _),
+    three_of_a_kind(Dados, _),
     sum_list(Dados, Puntos), !.
-puntaje(Dados, three_of_a_kind, Puntos):-
-    three_of_a_kind(Dados, false, _),
+puntaje(_, three_of_a_kind, Puntos):-
     Puntos is 0.
 puntaje(Dados, four_of_a_kind, Puntos):-
-    four_of_a_kind(Dados, true),
+    four_of_a_kind(Dados),
     sum_list(Dados, Puntos), !.
-puntaje(Dados, four_of_a_kind, Puntos):-
-    four_of_a_kind(Dados, false),
+puntaje(_, four_of_a_kind, Puntos):-
     Puntos is 0.
 puntaje(Dados, full_house, Puntos):-
-    is_full_house(Dados, true),
+    is_full_house(Dados),
     Puntos is 25, !.
-puntaje(Dados, full_house, Puntos):-
-    is_full_house(Dados, false),
+puntaje(_, full_house, Puntos):-
     Puntos is 0.
 puntaje(Dados, small_straight, Puntos):-
-    small_straight(Dados, true),
+    small_straight(Dados),
     Puntos is 30, !.
-puntaje(Dados, small_straight, Puntos):-
-    small_straight(Dados, false),
+puntaje(_, small_straight, Puntos):-
     Puntos is 0.
 puntaje(Dados, large_straight, Puntos):-
-    large_straight(Dados, true),
+    large_straight(Dados),
     Puntos is 40, !.
-puntaje(Dados, large_straight, Puntos):-
-    large_straight(Dados, false),
+puntaje(_, large_straight, Puntos):-
     Puntos is 0.
 puntaje(Dados, yahtzee, Puntos):-
     yahtzee(Dados, Dados, 5),
